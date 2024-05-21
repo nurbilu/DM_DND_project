@@ -22,12 +22,7 @@ services:
     environment:
       - API_URL=http://backend:8000
 
-  tensorflow:
-    build: ./tensorflow
-    volumes:
-      - ./tensorflow:/app
-    ports:
-      - "8501:8501"
+
     
 
 
