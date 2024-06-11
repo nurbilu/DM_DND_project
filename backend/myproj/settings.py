@@ -20,6 +20,7 @@ from logging.handlers import RotatingFileHandler
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Logging configuration
+# delete log.log content every time u git push
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -28,7 +29,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': os.path.join(BASE_DIR, 'log.log'),
-            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'maxBytes': 1024 * 1024 * 500,  # 500 MB
             'backupCount': 4,
             'formatter': 'verbose',
         },
@@ -56,6 +57,7 @@ env = environ.Env()
 environ.Env.read_env()
 
 SECRET_KEY = env("SECRET_KEY")
+GEMINI_API_KEY = env("GEMINI_API_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -244,4 +246,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 CORS_ALLOW_ALL_ORIGINS = True
+CSRF_COOKIE_NAME = "csrftoken"

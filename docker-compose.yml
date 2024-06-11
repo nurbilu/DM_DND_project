@@ -7,7 +7,6 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
-
     command: python manage.py runserver 0.0.0.0:8000
     depends_on:
       - tensorflow
@@ -22,9 +21,12 @@ services:
     environment:
       - API_URL=http://backend:8000
 
-
-    
-
+  tensorflow:
+    build: ./tensorflow
+    container_name: tensorflow
+    volumes:
+      - ./tensorflow:/app
+    command: python train_model.py
 
 networks:
   default:
