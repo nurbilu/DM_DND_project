@@ -20,7 +20,7 @@ services:
       - "4200:4200"
     environment:
       - API_URL=http://backend:8000
-
+# not sure if this is needed
   tensorflow:
     build: ./tensorflow
     container_name: tensorflow

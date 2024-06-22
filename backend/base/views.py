@@ -1,57 +1,70 @@
-from rest_framework import generics, status
+from django.contrib.auth import authenticate, login
+from rest_framework import permissions, status, generics
 from rest_framework.response import Response
-from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
-from .serializers import UserSerializer, ChatMessageSerializer
-import os
-import google.generativeai as genai
-from django.http import JsonResponse
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .serializers import UserRegisterSerializer, MyTokenObtainPairSerializer, UserProfileSerializer
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.views import TokenObtainPairView
+import logging
+from django.http import JsonResponse
+from .utils import get_gemini_response
 
-# Configure the Google AI Python SDK with the environment variable
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+User = get_user_model()
 
-class RegisterView(generics.CreateAPIView):
+class UserRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UserRegisterSerializer
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-            'user': UserSerializer(user, context=self.get_serializer_context()).data
-        }, status=status.HTTP_201_CREATED)
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
-class ChatView(generics.GenericAPIView):
+class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = ChatMessageSerializer
+
+    def get(self, request):
+        if request.user.is_superuser:
+            # Return all user profiles for superusers
+            users = User.objects.all()
+            serializer = UserProfileSerializer(users, many=True)
+            return Response(serializer.data)
+        else:
+            # Return the profile of the requesting user
+            try:
+                user_profile = User.objects.get(username=request.user.username)
+                serializer = UserProfileSerializer(user_profile)
+                return Response(serializer.data)
+            except User.DoesNotExist:
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                logging.error(f"Error retrieving user profile: {str(e)}")
+                return Response({"error": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            login(request, user)
+            return Response({'message': 'User logged in successfully'}, status=status.HTTP_200_OK)
+        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]  # Allow unauthenticated users
 
     def post(self, request, *args, **kwargs):
-        user_input = request.data.get('message')
-        
-        # Create the model with a detailed configuration
-        generation_config = {
-            "temperature": 1,
-            "top_p": 0.95,
-            "top_k": 64,
-            "max_output_tokens": 150,
-            "response_mime_type": "text/plain",
-        }
-        
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-pro",
-            generation_config=generation_config
-        )
+        serializer = UserRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "User registered successfully"}, status=201)
+        return Response(serializer.errors, status=400)
 
-        # Start a chat session with the model
-        chat_session = model.start_chat(history=[])
-        
-        # Send a message to the model and get the response
-        response = chat_session.send_message(user_input)
-        
-        # Return the response text
-        return JsonResponse({'response': response.text})
+def chat_response(request):
+    prompt = request.GET.get('prompt')
+    response = get_gemini_response(prompt)
+    if 'error' in response:
+        return JsonResponse({'error': response['error'], 'details': response.get('details')}, status=500)
+    return JsonResponse(response)

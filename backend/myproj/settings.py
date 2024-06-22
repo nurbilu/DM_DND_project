@@ -19,6 +19,10 @@ from logging.handlers import RotatingFileHandler
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+AUTH_USER_MODEL = 'base.User'
 # Logging configuration
 # delete log.log content every time u git push
 LOGGING = {
@@ -103,6 +107,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
 
 SIMPLE_JWT = {
@@ -112,6 +119,8 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
     'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
@@ -183,15 +192,6 @@ DATABASES = {
         "PORT": env('DB_PORT'),
     }
 }
-# MONGO_DB = {
-#     'NAME': 'DnD_AI_DB',
-#     'HOST': '127.0.0.1',
-#     'PORT': 27017,
-#     'USER': 'nurb111@gmail.com',
-#     'PASSWORD': 'Gnur1996115',
-# }
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
