@@ -15,7 +15,7 @@ load_dotenv()
 app.config['SECRET_KEY'] = os.getenv('the_secret_key')
 
 # MongoDB connection setup
-uri = "mongodb+srv://nurb111:MongoBILU1996@cluster0.luomlfx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+uri =" ********************************************** "
 client = MongoClient(uri, server_api=ServerApi('1'))
 
 # Test MongoDB connection
